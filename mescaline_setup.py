@@ -34,7 +34,6 @@ def parse_custom_attribs(attrib):
 
             elif key == 'from_spot_light' or key == 'type':
                 attrs[key] = attr
-
     return attrs
 
 
@@ -51,7 +50,6 @@ def convert_area_light(area_light, attrs):
 
     # create and initialise dbsdf
     light_edf = ms_commands.create_shading_node('diffuse_edf', area_light + '_edf')
-    print light_edf
     cmds.setAttr(light_edf + '.exitance', attrs['color'][0], attrs['color'][1], attrs['color'][2], type='double3')
     cmds.setAttr(light_edf + '.exitance_multiplier', attrs['multiplier'], attrs['multiplier'], attrs['multiplier'], type='double3')
 
@@ -88,10 +86,11 @@ def setup():
     for transform in cmds.ls(tr=True):
         if cmds.attributeQuery(custom_attr, n=transform, exists=True):
             attribs = parse_custom_attribs(transform)
-            if attribs['type'] == 'arealight':
-                area_lights.append([transform, attribs])
-            elif attribs['type'] == 'gobo_dummy':
-                gobo_dummys.append([transform, attribs])
+            if 'type' in attribs.keys():
+                if attribs['type'] == 'arealight':
+                    area_lights.append([transform, attribs])
+                elif attribs['type'] == 'gobo_dummy':
+                    gobo_dummys.append([transform, attribs])
 
     for arealight in area_lights:
         convert_area_light(arealight[0], arealight[1])
