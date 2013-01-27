@@ -18,11 +18,10 @@ def get_area_lights():
 
 
 def parse_custom_attribs(attrib):
-
     custom_attr_string = cmds.getAttr(attrib + '.' + custom_attr)
     attrs = dict()
-    for pair in custom_attr_string.split('&cr;&lf;'):
 
+    for pair in custom_attr_string.split('&cr;&lf;'):
         if pair:
             split_pair = pair.split(' = ')
             key = split_pair[0]
@@ -40,7 +39,7 @@ def parse_custom_attribs(attrib):
             elif key == 'color':
 
                 attr_string_list = re.findall(r'[0-9]+', attr)
-                attrs[key] = (float(attr_string_list[0]) / 255, float(attr_string_list[1]) / 255, float(attr_string_list[2]) / for255)
+                attrs[key] = (float(attr_string_list[0]) / 255, float(attr_string_list[1]) / 255, float(attr_string_list[2]) / 255)
 
             elif key == 'from_spot_light':
                 attrs[key] = attr
@@ -49,7 +48,7 @@ def parse_custom_attribs(attrib):
 
 
 def convert_area_light(area_light):
-    attrs = parse_custom_attribs(area_light + '.' + custom_attr)
+    attrs = parse_custom_attribs(area_light)
 
     # create and initialise material for object
     light_material = cmds.createNode('ms_appleseed_material', n=area_light + '_material')
@@ -74,7 +73,6 @@ def convert_area_light(area_light):
 
 
 def add_gobo(dummy_object):
-
     attrs = parse_custom_attribs(dummy_object)
     cmds.select(attrs['from_spot_light'])
 
@@ -88,7 +86,7 @@ def add_gobo(dummy_object):
 def connect_dof_target(target, camera):
     pass
 
-def setup():
 
+def setup():
     for area_light in get_area_lights():
         convert_area_light(area_light)
