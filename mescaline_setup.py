@@ -40,7 +40,7 @@ def parse_custom_attribs(attrib):
             elif key == 'color':
 
                 attr_string_list = re.findall(r'[0-9]+', attr)
-                attrs[key] = (float(attr_string_list[0]) / 255, float(attr_string_list[1]) / 255, float(attr_string_list[2]) / for255)
+                attrs[key] = (float(attr_string_list[0]) / 255, float(attr_string_list[1]) / 255, float(attr_string_list[2]) / 255)
 
             elif key == 'from_spot_light':
                 attrs[key] = attr
@@ -49,7 +49,7 @@ def parse_custom_attribs(attrib):
 
 
 def convert_area_light(area_light):
-    attrs = parse_custom_attribs(area_light + '.' + custom_attr)
+    attrs = parse_custom_attribs(area_light)
 
     # create and initialise material for object
     light_material = cmds.createNode('ms_appleseed_material', n=area_light + '_material')
