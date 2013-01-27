@@ -105,11 +105,3 @@ def setup():
             intensity = cmds.getAttr(light + '.intensity') * 1000
             cmds.setAttr(light + '.intensity', intensity)
 
-
-
-
-
-
-
-
-
