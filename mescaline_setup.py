@@ -100,7 +100,8 @@ def setup():
 
     # adjust light multiplier values
     for light in cmds.ls(lt=True):
-        if (cmds.nodeType(light) == 'spotLight') or (cmds.nodeType(light) == 'pointLight'):
-            intensity = cmds.getAttr(light + '.intensity') * 1000
+        light_type = cmds.nodeType(light)
+        if light_type == 'spotLight' or light_type == 'pointLight':
+            intensity = cmds.getAttr(light + '.intensity') * 2.5
             cmds.setAttr(light + '.intensity', intensity)
 
