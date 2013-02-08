@@ -4,27 +4,26 @@ import ms_commands
 
 reload(ms_commands)
 
-
 custom_attr = 'UDP3DSMAX'
 
 def parse_custom_attribs(attrib):
 
     custom_attr_string = cmds.getAttr(attrib + '.' + custom_attr)
     attrs = dict()
-    for pair in custom_attr_string.split('&cr;&lf;'):
 
+    for pair in custom_attr_string.split('&cr;&lf;'):
         if pair:
             split_pair = pair.split(' = ')
             key = split_pair[0]
             attr = split_pair[1]
 
-            if (key == 'as_light') or (key == 'invisible'):
+            if key == 'as_light' or key == 'invisible':
                 if attr == 'true':
                     attrs[key] = True
                 else:
                     attrs[key] = False
 
-            elif key =='multiplier':
+            elif key == 'multiplier' or key == 'f_stop':
                 attrs[key] = float(re.match(r'^[0-9\.]+$', attr).group(0))
 
             elif key == 'color':
@@ -34,6 +33,7 @@ def parse_custom_attribs(attrib):
 
             elif key == 'from_spot_light' or key == 'type':
                 attrs[key] = attr
+
     return attrs
 
 
@@ -74,23 +74,48 @@ def add_gobo(dummy_object, attrs):
     cmds.delete()
 
 
-def connect_dof_target(target, camera):
-    pass
+def setup_dof(target, camera, f_stop):
+
+    cmds.setAttr(camera + '.depthOfField', 1)
+
+    # create a locator parented to the camera
+    cam_matrix = cmds.xform(camera, q=True, m=True, ws=True)
+    cam_locator = cmds.spaceLocator()
+    cmds.xform(cam_locator, m=cam_matrix, ws=True)
+    cmds.select(cam_locator, camera, r=True)
+    cmds.parent()
+
+    # create a locator parented to the target
+    target_matrix = cmds.xform(target, q=True, m=True, ws=True)
+    target_locator = cmds.spaceLocator()
+    cmds.xform(target_locator, m=target_matrix, ws=True)
+    cmds.select(target_locator, target, r=True)
+    cmds.parent()
+
+    distance_node = cmds.distanceDimension(cam_locator, target_locator)
+
+    cmds.connectAttr(distance_node + '.distance', camera + '.focusDistance')
+
+    cmds.setAttr(camera + '.fStop', f_stop)
 
 
 def setup():
 
     area_lights = []
     gobo_dummys = []
+    cameras = []
 
     for transform in cmds.ls(tr=True):
         if cmds.attributeQuery(custom_attr, n=transform, exists=True):
             attribs = parse_custom_attribs(transform)
             if 'type' in attribs.keys():
-                if attribs['type'] == 'arealight':
+                type = attribs['type']
+                if type == 'arealight':
                     area_lights.append([transform, attribs])
-                elif attribs['type'] == 'gobo_dummy':
+                elif type == 'gobo_dummy':
                     gobo_dummys.append([transform, attribs])
+                elif type == 'camera':
+                    cameras.append([transform, attribs])
 
     for arealight in area_lights:
         convert_area_light(arealight[0], arealight[1])
@@ -105,3 +130,5 @@ def setup():
             intensity = cmds.getAttr(light + '.intensity') * 2.5
             cmds.setAttr(light + '.intensity', intensity)
 
+    for camera in cameras:
+        setup_dof('dof_target', camera[0], camera[1]['f_stop'])
