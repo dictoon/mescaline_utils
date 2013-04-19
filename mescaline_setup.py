@@ -1,3 +1,26 @@
+
+#
+# Copyright (c) 2012-2013 Jonathan Topf
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in
+# all copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+# THE SOFTWARE.
+#
+
 import maya.cmds as cmds
 import re
 import ms_commands
@@ -44,11 +67,11 @@ def convert_area_light(area_light, attrs):
     cmds.setAttr(light_material + '.enable_back_material', 0)
     cmds.setAttr(light_material + '.duplicate_front_attributes_on_back', 0)
 
-    # cerate and initialise surface shader
+    # create and initialise surface shader
     light_surface_shader = ms_commands.create_shading_node('constant_surface_shader', area_light + '_surface_shader')
     cmds.setAttr(light_surface_shader + '.alpha_multiplier', 0,0,0, type='double3')
 
-    # create and initialise dbsdf
+    # create and initialise edf
     light_edf = ms_commands.create_shading_node('diffuse_edf', area_light + '_edf')
     cmds.setAttr(light_edf + '.exitance', attrs['color'][0], attrs['color'][1], attrs['color'][2], type='double3')
     cmds.setAttr(light_edf + '.exitance_multiplier', attrs['multiplier'], attrs['multiplier'], attrs['multiplier'], type='double3')
