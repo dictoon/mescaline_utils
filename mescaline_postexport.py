@@ -53,7 +53,7 @@ def write_project_file(filepath, tree):
 # Process a given project file.
 #--------------------------------------------------------------------------------------------------
 
-ROOT_HAIR_BRDF_NAME = "h_hair_mat_brdf_root"
+NEW_ROOT_HAIR_BRDF_NAME = "h_hair_mat_brdf_root"
 
 def assign_render_layers(nodes):
     for node in nodes:
@@ -70,17 +70,8 @@ def assign_render_layers(nodes):
 def fixup_hair_material(assembly, material):
     bsdf_param = material.find("parameter[@name='bsdf']")
     old_bsdf_name = bsdf_param.attrib['value']
-
-    """
-    old_bsdf = assembly.find("bsdf[@name='" + old_bsdf_name + "']")
-    if old_bsdf is not None:
-        print("Removing {0}...".format(old_bsdf_name))
-        assembly.remove(old_bsdf)
-    """
-
-    print("Assigning BSDF {0} to material {1} (was: {2})...".format(ROOT_HAIR_BRDF_NAME, material.attrib['name'], old_bsdf_name))
-    bsdf_param.attrib['value'] = ROOT_HAIR_BRDF_NAME
-
+    print("Assigning BSDF {0} to material {1} (was: {2})...".format(NEW_ROOT_HAIR_BRDF_NAME, material.attrib['name'], old_bsdf_name))
+    bsdf_param.attrib['value'] = NEW_ROOT_HAIR_BRDF_NAME
     return old_bsdf_name
 
 def add_param(entity, name, value):
@@ -90,10 +81,10 @@ def add_param(entity, name, value):
     entity.insert(0, param)
     
 def add_hair_bsdf_network(assembly, old_bsdf_name):
-    print("Adding BSDF {0} to assembly {1}...".format(ROOT_HAIR_BRDF_NAME, assembly.attrib['name']))
+    print("Adding BSDF {0} to assembly {1}...".format(NEW_ROOT_HAIR_BRDF_NAME, assembly.attrib['name']))
 
     root_brdf = xml.Element('bsdf')
-    root_brdf.attrib['name'] = ROOT_HAIR_BRDF_NAME
+    root_brdf.attrib['name'] = NEW_ROOT_HAIR_BRDF_NAME
     root_brdf.attrib['model'] = "bsdf_mix"
     add_param(root_brdf, "bsdf0", old_bsdf_name)
     add_param(root_brdf, "weight0", "0.0")
