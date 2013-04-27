@@ -53,6 +53,7 @@ def write_project_file(filepath, tree):
 # Process a given project file.
 #--------------------------------------------------------------------------------------------------
 
+HAIR_MATERIAL_MARKER = "hood_hair"
 NEW_ROOT_HAIR_BRDF_NAME = "h_hair_mat_brdf_root"
 
 def assign_render_layers(nodes):
@@ -74,46 +75,51 @@ def fixup_hair_material(assembly, material):
     bsdf_param.attrib['value'] = NEW_ROOT_HAIR_BRDF_NAME
     return old_bsdf_name
 
-def add_param(entity, name, value):
-    param = xml.Element('parameter')
-    param.attrib['name'] = name
-    param.attrib['value'] = value
-    entity.insert(0, param)
-    
-def add_hair_bsdf_network(assembly, old_bsdf_name):
-    print("Adding BSDF {0} to assembly {1}...".format(NEW_ROOT_HAIR_BRDF_NAME, assembly.attrib['name']))
+def set_param(entity, name, value):
+    param = entity.find("parameter[@name='" + name + "']")
+    if param is None:
+        param = xml.Element('parameter')
+        param.attrib['name'] = name
+        param.attrib['value'] = value
+        entity.insert(0, param)
+    else:
+        param.attrib['value'] = value
 
-    root_brdf = xml.Element('bsdf')
-    root_brdf.attrib['name'] = NEW_ROOT_HAIR_BRDF_NAME
-    root_brdf.attrib['model'] = "bsdf_mix"
-    add_param(root_brdf, "bsdf0", old_bsdf_name)
-    add_param(root_brdf, "weight0", "0.0")
-    add_param(root_brdf, "bsdf1", "h_hair_mat_glossy_brdf")
-    add_param(root_brdf, "weight1", "0.1")
-    assembly.append(root_brdf)
+def add_hair_bsdf_network(assembly, reflectance_name):
+    print("Adding BSDF {0} with reflectance {1} to assembly {2}...".format(NEW_ROOT_HAIR_BRDF_NAME, reflectance_name, assembly.attrib['name']))
 
-    glossy_brdf = xml.Element('bsdf')
-    glossy_brdf.attrib['name'] = "h_hair_mat_glossy_brdf"
-    glossy_brdf.attrib['model'] = "microfacet_brdf"
-    add_param(glossy_brdf, "fresnel_multiplier", "0.0")
-    add_param(glossy_brdf, "mdf", "ward")
-    add_param(glossy_brdf, "mdf_parameter", "0.8")
-    add_param(glossy_brdf, "reflectance", old_bsdf_name + ".reflectance")
-    add_param(glossy_brdf, "reflectance_multiplier", "1.0")
-    assembly.append(glossy_brdf)
+    hair_brdf = xml.Element('bsdf')
+    hair_brdf.attrib['name'] = NEW_ROOT_HAIR_BRDF_NAME
+    hair_brdf.attrib['model'] = "microfacet_brdf"
+    set_param(hair_brdf, "fresnel_multiplier", "0.0")
+    set_param(hair_brdf, "mdf", "ward")
+    set_param(hair_brdf, "mdf_parameter", "0.8")
+    set_param(hair_brdf, "reflectance", reflectance_name)
+    set_param(hair_brdf, "reflectance_multiplier", "1.0")
+    assembly.append(hair_brdf)
 
 def replace_hair_shader(root):
     for assembly in root.iter('assembly'):
-        old_hair_bsdfs = set()
+        old_hair_bsdf_names = set()
 
         for material in assembly.findall('material'):
-            if "hair_mat" in material.attrib['name']:
-                old_hair_bsdfs.add(fixup_hair_material(assembly, material))
+            if HAIR_MATERIAL_MARKER in material.attrib['name']:
+                old_hair_bsdf_names.add(fixup_hair_material(assembly, material))
 
-        assert len(old_hair_bsdfs) <= 1
+        assert len(old_hair_bsdf_names) <= 1
 
-        if len(old_hair_bsdfs) > 0:
-            add_hair_bsdf_network(assembly, old_hair_bsdfs.pop())
+        if len(old_hair_bsdf_names) > 0:
+            old_bsdf_name = old_hair_bsdf_names.pop()
+            old_bsdf = assembly.find('bsdf[@name="' + old_bsdf_name + '"]')
+            old_bsdf_model = old_bsdf.attrib['model']
+            if old_bsdf_model == 'bsdf_mix':
+                bsdf0_param = old_bsdf.find('parameter[@name="bsdf0"]')
+                bsdf0_name = bsdf0_param.attrib['value']
+                old_bsdf = assembly.find('bsdf[@name="' + bsdf0_name + '"]')
+            reflectance_param = old_bsdf.find('parameter[@name="reflectance"]')
+            reflectance_name = reflectance_param.attrib['value']
+            add_hair_bsdf_network(assembly, reflectance_name)
+
 
 def process_file(filepath):
     print("Processing {0}...".format(filepath))
