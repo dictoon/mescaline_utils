@@ -120,6 +120,11 @@ def replace_hair_shader(root):
             reflectance_name = reflectance_param.attrib['value']
             add_hair_bsdf_network(assembly, reflectance_name)
 
+def tweak_frames(root):
+    for frame in root.iter('frame'):
+        print("Tweaking frame {0}...".format(frame.attrib['name']))
+        set_param(frame, "filter", "gaussian")
+        set_param(frame, "filter_size", "2.5")
 
 def process_file(filepath):
     print("Processing {0}...".format(filepath))
@@ -131,6 +136,8 @@ def process_file(filepath):
     assign_render_layers([ light for light in root.iter('light') ])
 
     replace_hair_shader(root)
+
+    tweak_frames(root)
 
     write_project_file(filepath, tree)
 
