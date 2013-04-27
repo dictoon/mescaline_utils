@@ -54,7 +54,7 @@ def write_project_file(filepath, tree):
 #--------------------------------------------------------------------------------------------------
 
 HAIR_MATERIAL_MARKER = "hood_hair"
-NEW_ROOT_HAIR_BRDF_NAME = "h_hair_mat_brdf_root"
+NEW_ROOT_HAIR_BRDF_NAME = "hood_hair_brdf"
 
 def assign_render_layers(nodes):
     for node in nodes:
@@ -87,15 +87,14 @@ def set_param(entity, name, value):
 
 def add_hair_bsdf_network(assembly, reflectance_name):
     print("Adding BSDF {0} with reflectance {1} to assembly {2}...".format(NEW_ROOT_HAIR_BRDF_NAME, reflectance_name, assembly.attrib['name']))
-
     hair_brdf = xml.Element('bsdf')
     hair_brdf.attrib['name'] = NEW_ROOT_HAIR_BRDF_NAME
     hair_brdf.attrib['model'] = "microfacet_brdf"
-    set_param(hair_brdf, "fresnel_multiplier", "0.0")
     set_param(hair_brdf, "mdf", "ward")
-    set_param(hair_brdf, "mdf_parameter", "0.8")
+    set_param(hair_brdf, "mdf_parameter", "0.3")
     set_param(hair_brdf, "reflectance", reflectance_name)
     set_param(hair_brdf, "reflectance_multiplier", "1.0")
+    set_param(hair_brdf, "fresnel_multiplier", "0.1")
     assembly.append(hair_brdf)
 
 def replace_hair_shader(root):
@@ -106,7 +105,7 @@ def replace_hair_shader(root):
             if HAIR_MATERIAL_MARKER in material.attrib['name']:
                 old_hair_bsdf_names.add(fixup_hair_material(assembly, material))
 
-        assert len(old_hair_bsdf_names) <= 1
+        # assert len(old_hair_bsdf_names) <= 1
 
         if len(old_hair_bsdf_names) > 0:
             old_bsdf_name = old_hair_bsdf_names.pop()
