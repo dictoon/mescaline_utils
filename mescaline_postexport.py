@@ -83,19 +83,28 @@ def find_bsdf(root, name):
 def find_surface_shader(root, name):
     return find_entity(root, 'surface_shader', name)
 
-def set_material_fresnel(root, material_marker, fresnel):
+def collect_bsdfs_for_material(root, material_marker):
     bsdfs = set()
 
     for material in root.iter('material'):
         if material_marker in material.attrib['name']:
-            bsdf = find_bsdf(root, get_param(material, "bsdf"))
-            assert bsdf.attrib['model'] == 'bsdf_mix'
-            bsdfs.add(bsdf)
+            bsdfs.add(find_bsdf(root, get_param(material, "bsdf")))
 
-    for mix_bsdf in bsdfs:
+    return bsdfs
+
+def set_material_fresnel(root, material_marker, fresnel):
+    for mix_bsdf in collect_bsdfs_for_material(root, material_marker):
+        assert mix_bsdf.attrib['model'] == 'bsdf_mix'
         microfacet_bsdf = find_bsdf(root, get_param(mix_bsdf, "bsdf1"))
         print("  Setting Fresnel multiplier to \"{0}\" on BSDF \"{1}\"...".format(fresnel, microfacet_bsdf.attrib['name']))
         set_param(microfacet_bsdf, "fresnel_multiplier", fresnel)
+
+def set_material_glossy_reflectance(root, material_marker, reflectance):
+    for mix_bsdf in collect_bsdfs_for_material(root, material_marker):
+        assert mix_bsdf.attrib['model'] == 'bsdf_mix'
+        microfacet_bsdf = find_bsdf(root, get_param(mix_bsdf, "bsdf1"))
+        print("  Setting reflectance to \"{0}\" on BSDF \"{1}\"...".format(reflectance, microfacet_bsdf.attrib['name']))
+        set_param(microfacet_bsdf, "reflectance", reflectance)
 
 def set_material_translucency(root, material_marker, translucency):
     surface_shaders = set()
@@ -194,6 +203,15 @@ def tweak_robe_shader(root):
 
 
 #--------------------------------------------------------------------------------------------------
+# Tweak the glove shader.
+#--------------------------------------------------------------------------------------------------
+
+def tweak_glove_shader(root):
+    set_material_fresnel(root, "hood_glove", "0.3")
+    set_material_glossy_reflectance(root, "hood_glove", "0.04 0.04 0.04")
+
+
+#--------------------------------------------------------------------------------------------------
 # Tweak vegetation shaders.
 #--------------------------------------------------------------------------------------------------
 
@@ -247,6 +265,7 @@ def process_file(filepath):
     replace_mesh_file_extensions(root)
     replace_hair_shader(root)
     tweak_robe_shader(root)
+    tweak_glove_shader(root)
     tweak_vegetation_shaders(root)
     tweak_frames(root)
     assign_render_layers(root)
