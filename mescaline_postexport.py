@@ -231,7 +231,7 @@ def tweak_frames(root):
     for frame in root.iter('frame'):
         print("  Tweaking frame \"{0}\"...".format(frame.attrib['name']))
         set_param(frame, "filter", "gaussian")
-        set_param(frame, "filter_size", "2.5")
+        set_param(frame, "filter_size", "2.0")
 
 
 #--------------------------------------------------------------------------------------------------
