@@ -41,16 +41,12 @@ def parse_custom_attribs(attrib):
             attr = split_pair[1]
 
             if key == 'as_light' or key == 'invisible':
-                if attr == 'true':
-                    attrs[key] = True
-                else:
-                    attrs[key] = False
+                attrs[key] = (attr == 'true')
 
             elif key == 'multiplier' or key == 'f_stop':
                 attrs[key] = float(re.match(r'^[0-9\.]+$', attr).group(0))
 
             elif key == 'color':
-
                 attr_string_list = re.findall(r'[0-9]+', attr)
                 attrs[key] = (float(attr_string_list[0]) / 255, float(attr_string_list[1]) / 255, float(attr_string_list[2]) / 255)
 
