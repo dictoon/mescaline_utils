@@ -115,9 +115,9 @@ def setup_dof(target, camera, f_stop):
     cmds.connectAttr(distance_node + '.distance', camera + '.focusDistance')
 
     f_stop_multiplier = 1.0
-    if f_stop < 1.0:
-        f_stop *= 100.0
-        f_stop_multiplier = 1.0 / 100.0
+    while f_stop < 1.0:
+        f_stop *= 2.0
+        f_stop_multiplier /= 2.0
 
     cmds.setAttr(camera + '.fStop', f_stop)
     cmds.setAttr(camera + '.focusRegionScale', f_stop_multiplier)
