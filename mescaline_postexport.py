@@ -96,14 +96,14 @@ def set_material_fresnel(root, material_marker, fresnel):
     for mix_bsdf in collect_bsdfs_for_material(root, material_marker):
         assert mix_bsdf.attrib['model'] == 'bsdf_mix'
         microfacet_bsdf = find_bsdf(root, get_param(mix_bsdf, "bsdf1"))
-        print("  Setting Fresnel multiplier to \"{0}\" on BSDF \"{1}\"...".format(fresnel, microfacet_bsdf.attrib['name']))
+        print("    Setting Fresnel multiplier to \"{0}\" on BSDF \"{1}\"...".format(fresnel, microfacet_bsdf.attrib['name']))
         set_param(microfacet_bsdf, "fresnel_multiplier", fresnel)
 
 def set_material_glossy_reflectance(root, material_marker, reflectance):
     for mix_bsdf in collect_bsdfs_for_material(root, material_marker):
         assert mix_bsdf.attrib['model'] == 'bsdf_mix'
         microfacet_bsdf = find_bsdf(root, get_param(mix_bsdf, "bsdf1"))
-        print("  Setting reflectance to \"{0}\" on BSDF \"{1}\"...".format(reflectance, microfacet_bsdf.attrib['name']))
+        print("    Setting reflectance to \"{0}\" on BSDF \"{1}\"...".format(reflectance, microfacet_bsdf.attrib['name']))
         set_param(microfacet_bsdf, "reflectance", reflectance)
 
 def set_material_translucency(root, material_marker, translucency):
@@ -116,7 +116,7 @@ def set_material_translucency(root, material_marker, translucency):
             surface_shaders.add(surface_shader)
 
     for surface_shader in surface_shaders:
-        print("  Setting translucency to \"{0}\" on surface shader \"{1}\"...".format(translucency, surface_shader.attrib['name']))
+        print("    Setting translucency to \"{0}\" on surface shader \"{1}\"...".format(translucency, surface_shader.attrib['name']))
         set_param(surface_shader, "translucency", translucency)
 
 
@@ -159,12 +159,12 @@ NEW_ROOT_HAIR_BRDF_NAME = "hood_hair_brdf"
 
 def fixup_hair_material(assembly, material):
     old_bsdf_name = get_param(material, 'bsdf')
-    print("  Replacing BSDF \"{0}\" by BSDF \"{1}\" in material \"{2}\"...".format(old_bsdf_name, NEW_ROOT_HAIR_BRDF_NAME, material.attrib['name']))
+    print("    Replacing BSDF \"{0}\" by BSDF \"{1}\" in material \"{2}\"...".format(old_bsdf_name, NEW_ROOT_HAIR_BRDF_NAME, material.attrib['name']))
     set_param(material, 'bsdf', NEW_ROOT_HAIR_BRDF_NAME)
     return old_bsdf_name
 
 def add_hair_bsdf_network(assembly, reflectance_name):
-    print("  Adding BSDF \"{0}\" with reflectance \"{1}\" to assembly \"{2}\"...".format(NEW_ROOT_HAIR_BRDF_NAME, reflectance_name, assembly.attrib['name']))
+    print("    Adding BSDF \"{0}\" with reflectance \"{1}\" to assembly \"{2}\"...".format(NEW_ROOT_HAIR_BRDF_NAME, reflectance_name, assembly.attrib['name']))
     hair_brdf = xml.Element('bsdf')
     hair_brdf.attrib['name'] = NEW_ROOT_HAIR_BRDF_NAME
     hair_brdf.attrib['model'] = "microfacet_brdf"
@@ -176,6 +176,8 @@ def add_hair_bsdf_network(assembly, reflectance_name):
     assembly.append(hair_brdf)
 
 def replace_hair_shader(root):
+    print("  Replacing hair shader:")
+
     for assembly in root.iter('assembly'):
         old_hair_bsdf_names = set()
 
@@ -199,7 +201,9 @@ def replace_hair_shader(root):
 #--------------------------------------------------------------------------------------------------
 
 def tweak_robe_shader(root):
-    set_material_fresnel(root, "hood_robe", "0.3")
+    print("  Tweaking robe shader:")
+    set_material_fresnel(root, "hood_robe", "0.05")
+    set_material_fresnel(root, "hood_cap", "0.05")
 
 
 #--------------------------------------------------------------------------------------------------
@@ -207,6 +211,7 @@ def tweak_robe_shader(root):
 #--------------------------------------------------------------------------------------------------
 
 def tweak_glove_shader(root):
+    print("  Tweaking glove shader:")
     set_material_fresnel(root, "hood_glove", "0.3")
     set_material_glossy_reflectance(root, "hood_glove", "0.04 0.04 0.04")
 
@@ -215,9 +220,22 @@ def tweak_glove_shader(root):
 # Tweak vegetation shaders.
 #--------------------------------------------------------------------------------------------------
 
-VEGETATION_MATERIAL_MARKERS = [ "big_branches_", "big_leaves_", "plant_" ]
+VEGETATION_MATERIAL_MARKERS = [ "big_branches_",
+                                "big_leaves_",
+                                "plant_",
+                                "arbre_01_leave_01",
+                                "dead_leave_00",
+                                "ground_leaves",
+                                "ivy_leave",
+                                "Leaf 1",
+                                "Leaf 10",
+                                "leave_tree_00",
+                                "leaves_06",
+                                "leaves_13",
+                                "leaves_04" ]
 
 def tweak_vegetation_shaders(root):
+    print("  Tweaking vegetation shaders:")
     for material_marker in VEGETATION_MATERIAL_MARKERS:
         set_material_fresnel(root, material_marker, "0.1")
         set_material_translucency(root, material_marker, "0.5")
@@ -239,13 +257,15 @@ def tweak_frames(root):
 #--------------------------------------------------------------------------------------------------
 
 def assign_render_layers_to_nodes(nodes):
+    print("  Assigning render layers:")
+
     for node in nodes:
         name = node.attrib['name']
         if node.find("parameter[@name='render_layer']") is None:
-            print("  Assigning entity \"{0}\" to render layer \"{0}\"...".format(name))
+            print("    Assigning entity \"{0}\" to render layer \"{0}\"...".format(name))
             set_param(node, 'render_layer', name)
         else:
-            print("  Entity \"{0}\" is already assigned to a render layer.".format(name))
+            print("    Entity \"{0}\" is already assigned to a render layer.".format(name))
 
 def assign_render_layers(root):
     assign_render_layers_to_nodes([ edf for edf in root.iter('edf') ])
