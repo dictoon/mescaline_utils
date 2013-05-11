@@ -119,6 +119,14 @@ def set_material_translucency(root, material_marker, translucency):
         print("    Setting translucency to \"{0}\" on surface shader \"{1}\"...".format(translucency, surface_shader.attrib['name']))
         set_param(surface_shader, "translucency", translucency)
 
+def set_object_instance_ray_bias(root, object_instance_marker, bias):
+    for object_instance in root.iter('object_instance'):
+        object_instance_name = object_instance.attrib['name']
+        if object_instance_marker in object_instance_name:
+            print("    Setting ray bias (incoming direction, {0}) on object instance \"{1}\"...".format(bias, object_instance_name))
+            set_param(object_instance, 'ray_bias_method', 'incoming_direction')
+            set_param(object_instance, 'ray_bias_distance', bias)
+
 
 #--------------------------------------------------------------------------------------------------
 # Replace mesh file extensions (from .obj to .binarymesh).
@@ -204,6 +212,7 @@ def tweak_robe_shader(root):
     print("  Tweaking robe shader:")
     set_material_fresnel(root, "hood_robe", "0.05")
     set_material_fresnel(root, "hood_cap", "0.05")
+    set_object_instance_ray_bias(root, "hood_robe", "-0.05")
 
 
 #--------------------------------------------------------------------------------------------------
@@ -236,9 +245,12 @@ VEGETATION_MATERIAL_MARKERS = [ "big_branches_",
 
 def tweak_vegetation_shaders(root):
     print("  Tweaking vegetation shaders:")
+
     for material_marker in VEGETATION_MATERIAL_MARKERS:
         set_material_fresnel(root, material_marker, "0.1")
         set_material_translucency(root, material_marker, "0.5")
+
+    set_material_fresnel(root, "d_ground", "0.0")
 
 
 #--------------------------------------------------------------------------------------------------
