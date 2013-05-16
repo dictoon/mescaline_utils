@@ -27,16 +27,22 @@ import ms_commands
 
 reload(ms_commands)
 
-custom_attr = 'UDP3DSMAX'
+CUSTOM_ATTR_NAME = 'UDP3DSMAX'
 
-def parse_custom_attribs(attrib):
+def parse_custom_attribs(entity):
+    print("Parsing custom attributes on {0}...".format(entity))
 
-    custom_attr_string = cmds.getAttr(attrib + '.' + custom_attr)
+    custom_attr_string = cmds.getAttr(entity + '.' + CUSTOM_ATTR_NAME)
     attrs = dict()
 
     for pair in custom_attr_string.split('&cr;&lf;'):
         if pair:
-            split_pair = pair.split(' = ')
+            split_pair = pair.split('=')
+
+            if len(split_pair) != 2:
+                print("Skipping custom attribute string: {0}".format(pair))
+                continue
+
             key = split_pair[0]
             attr = split_pair[1]
 
@@ -57,7 +63,6 @@ def parse_custom_attribs(attrib):
 
 
 def convert_area_light(area_light, attrs):
-
     # create and initialise material for object
     light_material = cmds.createNode('ms_appleseed_material', n=area_light + '_material')
     cmds.setAttr(light_material + '.enable_back_material', 0)
@@ -80,7 +85,6 @@ def convert_area_light(area_light, attrs):
 
 
 def add_gobo(dummy_object, attrs):
-
     attrs = parse_custom_attribs(dummy_object)
     cmds.select(attrs['from_spot_light'])
 
@@ -94,7 +98,6 @@ def add_gobo(dummy_object, attrs):
 
 
 def setup_dof(target, camera, f_stop):
-
     cmds.setAttr(camera + '.depthOfField', 1)
 
     # create a locator parented to the camera
@@ -124,13 +127,12 @@ def setup_dof(target, camera, f_stop):
 
 
 def setup():
-
     area_lights = []
     gobo_dummys = []
     cameras = []
 
     for transform in cmds.ls(tr=True):
-        if cmds.attributeQuery(custom_attr, n=transform, exists=True):
+        if cmds.attributeQuery(CUSTOM_ATTR_NAME, n=transform, exists=True):
             attribs = parse_custom_attribs(transform)
             if 'type' in attribs.keys():
                 type = attribs['type']
@@ -156,3 +158,5 @@ def setup():
 
     for camera in cameras:
         setup_dof('dof_target', camera[0], camera[1]['f_stop'])
+
+    print("Done.")
