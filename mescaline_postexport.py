@@ -106,6 +106,13 @@ def set_material_glossy_reflectance(root, material_marker, reflectance):
         print("    Setting reflectance to \"{0}\" on BSDF \"{1}\"...".format(reflectance, microfacet_bsdf.attrib['name']))
         set_param(microfacet_bsdf, "reflectance", reflectance)
 
+def set_material_glossiness(root, material_marker, glossiness):
+    for mix_bsdf in collect_bsdfs_for_material(root, material_marker):
+        assert mix_bsdf.attrib['model'] == 'bsdf_mix'
+        microfacet_bsdf = find_bsdf(root, get_param(mix_bsdf, "bsdf1"))
+        print("    Setting glossiness to \"{0}\" on BSDF \"{1}\"...".format(glossiness, microfacet_bsdf.attrib['name']))
+        set_param(microfacet_bsdf, "mdf_parameter", glossiness)
+
 def set_material_translucency(root, material_marker, translucency):
     surface_shaders = set()
 
@@ -247,6 +254,8 @@ def tweak_vegetation_shaders(root):
 
     set_material_fresnel(root, "d_ground", "0.0")
     set_material_fresnel(root, "rock_pure", "0.0")
+
+    set_material_glossiness(root, "grass_", "1.0")
 
 
 #--------------------------------------------------------------------------------------------------
