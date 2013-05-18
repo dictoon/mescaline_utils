@@ -230,18 +230,13 @@ def tweak_glove_shader(root):
 #--------------------------------------------------------------------------------------------------
 
 VEGETATION_MATERIAL_MARKERS = [ "big_branches_",
-                                "big_leaves_",
-                                "plant_",
-                                "arbre_01_leave_01",
-                                "dead_leave_00",
-                                "ground_leaves",
                                 "ivy_leave",
-                                "Leaf 1",
-                                "Leaf 10",
-                                "leave_tree_00",
-                                "leaves_06",
-                                "leaves_13",
-                                "leaves_04" ]
+                                "plant_",
+                                "ground_leaves",
+                                "Leaf ",
+                                "leave_",
+                                "leaves_",
+                                "grass_" ]
 
 def tweak_vegetation_shaders(root):
     print("  Tweaking vegetation shaders:")
@@ -251,6 +246,22 @@ def tweak_vegetation_shaders(root):
         set_material_translucency(root, material_marker, "0.5")
 
     set_material_fresnel(root, "d_ground", "0.0")
+    set_material_fresnel(root, "rock_pure", "0.0")
+
+
+#--------------------------------------------------------------------------------------------------
+# Tweak the area lights.
+#--------------------------------------------------------------------------------------------------
+
+AREA_LIGHT_MATERIAL_MARKER = "arealight_"
+
+def tweak_area_lights(root):
+    print("  Tweaking area lights:")
+
+    for material in root.iter('material'):
+        if AREA_LIGHT_MATERIAL_MARKER in material.attrib['name']:
+            print("    Setting \"alpha_mask\" to \"0\" on material \"{0}\"...".format(material.attrib['name']))
+            set_param(material, "alpha_map", "0")
 
 
 #--------------------------------------------------------------------------------------------------
@@ -260,6 +271,8 @@ def tweak_vegetation_shaders(root):
 def tweak_frames(root):
     for frame in root.iter('frame'):
         print("  Tweaking frame \"{0}\"...".format(frame.attrib['name']))
+        set_param(frame, "pixel_format", "half")
+        set_param(frame, "tile_size", "128 128")
         set_param(frame, "filter", "gaussian")
         set_param(frame, "filter_size", "2.0")
 
@@ -299,6 +312,7 @@ def process_file(filepath):
     tweak_robe_shader(root)
     tweak_glove_shader(root)
     tweak_vegetation_shaders(root)
+    tweak_area_lights(root)
     tweak_frames(root)
     assign_render_layers(root)
 
