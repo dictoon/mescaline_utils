@@ -170,7 +170,7 @@ def replace_mesh_file_extensions(root):
 #--------------------------------------------------------------------------------------------------
 
 HAIR_MATERIAL_MARKER = "hood_hair"
-NEW_ROOT_HAIR_BRDF_NAME = "hood_hair_brdf"
+NEW_ROOT_HAIR_BRDF_NAME = "hood_hair_brdf_F972278D-F40C-4C72-95F0-E25E509FB62E"
 
 def fixup_hair_material(assembly, material):
     old_bsdf_name = get_param(material, 'bsdf')
@@ -252,9 +252,10 @@ def tweak_vegetation_shaders(root):
         set_material_fresnel(root, material_marker, "0.1")
         set_material_translucency(root, material_marker, "0.5")
 
-    set_material_fresnel(root, "d_ground", "0.0")
+    set_material_fresnel(root, "ground", "0.0")
     set_material_fresnel(root, "rock_pure", "0.0")
 
+    set_material_glossiness(root, "ground", "1.0")
     set_material_glossiness(root, "grass_", "1.0")
 
 
