@@ -50,8 +50,18 @@ def write_project_file(filepath, tree):
 
 
 #--------------------------------------------------------------------------------------------------
-# Utilities.
+# Utility functions.
 #--------------------------------------------------------------------------------------------------
+
+def walk(directory, recursive):
+    if recursive:
+        for dirpath, dirnames, filenames in os.walk(directory):
+            for filename in filenames:
+                yield os.path.join(dirpath, filename)
+    else:
+        dirpath, dirnames, filenames = os.walk(directory).next()
+        for filename in filenames:
+            yield os.path.join(dirpath, filename)
 
 def set_param(entity, name, value):
     param = entity.find("parameter[@name='" + name + "']")
@@ -92,6 +102,15 @@ def collect_bsdfs_for_material(root, material_marker):
 
     return bsdfs
 
+def collect_surface_shaders_for_material(root, material_marker):
+    surface_shaders = set()
+
+    for material in root.iter('material'):
+        if material_marker in material.attrib['name']:
+            surface_shaders.add(find_surface_shader(root, get_param(material, "surface_shader")))
+
+    return surface_shaders
+
 def set_material_fresnel(root, material_marker, fresnel):
     for mix_bsdf in collect_bsdfs_for_material(root, material_marker):
         assert mix_bsdf.attrib['model'] == 'bsdf_mix'
@@ -114,17 +133,16 @@ def set_material_glossiness(root, material_marker, glossiness):
         set_param(microfacet_bsdf, "mdf_parameter", glossiness)
 
 def set_material_translucency(root, material_marker, translucency):
-    surface_shaders = set()
-
-    for material in root.iter('material'):
-        if material_marker in material.attrib['name']:
-            surface_shader = find_surface_shader(root, get_param(material, "surface_shader"))
-            assert surface_shader.attrib['model'] == 'physical_surface_shader'
-            surface_shaders.add(surface_shader)
-
-    for surface_shader in surface_shaders:
+    for surface_shader in collect_surface_shaders_for_material(root, material_marker):
+        assert surface_shader.attrib['model'] == 'physical_surface_shader'
         print("    Setting translucency to \"{0}\" on surface shader \"{1}\"...".format(translucency, surface_shader.attrib['name']))
         set_param(surface_shader, "translucency", translucency)
+
+def set_material_sample_count(root, material_marker, sample_count):
+    for surface_shader in collect_surface_shaders_for_material(root, material_marker):
+        assert surface_shader.attrib['model'] == 'physical_surface_shader'
+        print("    Setting sample count to \"{0}\" on surface shader \"{1}\"...".format(sample_count, surface_shader.attrib['name']))
+        set_param(surface_shader, "front_lighting_samples", sample_count)
 
 def set_object_instance_ray_bias(root, object_instance_marker, bias):
     for object_instance in root.iter('object_instance'):
@@ -176,7 +194,6 @@ def fixup_hair_material(assembly, material):
     old_bsdf_name = get_param(material, 'bsdf')
     print("    Replacing BSDF \"{0}\" by BSDF \"{1}\" in material \"{2}\"...".format(old_bsdf_name, NEW_ROOT_HAIR_BRDF_NAME, material.attrib['name']))
     set_param(material, 'bsdf', NEW_ROOT_HAIR_BRDF_NAME)
-    return old_bsdf_name
 
 def add_hair_bsdf_network(assembly, reflectance_name):
     print("    Adding BSDF \"{0}\" with reflectance \"{1}\" to assembly \"{2}\"...".format(NEW_ROOT_HAIR_BRDF_NAME, reflectance_name, assembly.attrib['name']))
@@ -198,7 +215,8 @@ def replace_hair_shader(root):
 
         for material in assembly.findall('material'):
             if HAIR_MATERIAL_MARKER in material.attrib['name']:
-                old_hair_bsdf_names.add(fixup_hair_material(assembly, material))
+                old_hair_bsdf_names.add(get_param(material, 'bsdf'))
+                fixup_hair_material(assembly, material)
 
         # assert len(old_hair_bsdf_names) <= 1
 
@@ -212,24 +230,81 @@ def replace_hair_shader(root):
 
 
 #--------------------------------------------------------------------------------------------------
-# Tweak the robe shader.
+# Tweak the shaders on various parts of the hood.
 #--------------------------------------------------------------------------------------------------
 
-def tweak_robe_shader(root):
-    print("  Tweaking robe shader:")
+def tweak_hood_shaders(root):
+    print("  Tweaking hood's robe shaders:")
     set_material_fresnel(root, "hood_robe", "0.05")
     set_material_fresnel(root, "hood_cap", "0.05")
     set_object_instance_ray_bias(root, "hood_robe", "-0.05")
 
-
-#--------------------------------------------------------------------------------------------------
-# Tweak the glove shader.
-#--------------------------------------------------------------------------------------------------
-
-def tweak_glove_shader(root):
-    print("  Tweaking glove shader:")
+    print("  Tweaking hood's glove shader:")
     set_material_fresnel(root, "hood_glove", "0.3")
     set_material_glossy_reflectance(root, "hood_glove", "0.04 0.04 0.04")
+
+    print("  Tweaking hood's shoes shader:")
+    set_material_fresnel(root, "hood_shoe", "0.3")
+    set_material_glossy_reflectance(root, "hood_shoe", "0.04 0.04 0.04")
+
+    print("  Tweaking hood's body shaders:")
+    set_material_sample_count(root, "_face_", "4")
+    set_material_sample_count(root, "hood_body", "4")
+
+
+#--------------------------------------------------------------------------------------------------
+# Tweak the shaders on various parts of the wolf.
+#--------------------------------------------------------------------------------------------------
+
+WOLF_EYE_MATERIAL_MARKER = "wolf_eye"
+NEW_WOLF_EYE_SURFACE_SHADER_NAME = "wolf_eye_surface_shader_8A421E4D-49AA-4FF6-A6A2-05028708187B"
+
+def fixup_wolf_eye_material(assembly, material):
+    old_surface_shader_name = get_param(material, 'surface_shader')
+    print("    Replacing surface shader \"{0}\" by surface shader \"{1}\" in material \"{2}\"...".format(old_surface_shader_name, NEW_WOLF_EYE_SURFACE_SHADER_NAME, material.attrib['name']))
+    set_param(material, 'surface_shader', NEW_WOLF_EYE_SURFACE_SHADER_NAME)
+
+def add_wolf_eye_surface_shader(assembly, reflectance_name):
+    print("    Adding surface shader \"{0}\" with color \"{1}\" to assembly \"{2}\"...".format(NEW_WOLF_EYE_SURFACE_SHADER_NAME, reflectance_name, assembly.attrib['name']))
+    eye_shader = xml.Element('surface_shader')
+    eye_shader.attrib['name'] = NEW_WOLF_EYE_SURFACE_SHADER_NAME
+    eye_shader.attrib['model'] = "constant_surface_shader"
+    set_param(eye_shader, "color", reflectance_name)
+    assembly.append(eye_shader)
+
+def replace_wolf_eye_shader(root):
+    print("  Replacing wolf's eye shader:")
+
+    for assembly in root.iter('assembly'):
+        old_wolf_eye_bsdf_names = set()
+
+        for material in assembly.findall('material'):
+            if WOLF_EYE_MATERIAL_MARKER in material.attrib['name']:
+                old_wolf_eye_bsdf_names.add(get_param(material, 'bsdf'))
+                fixup_wolf_eye_material(assembly, material)
+
+        if len(old_wolf_eye_bsdf_names) > 0:
+            old_bsdf_name = old_wolf_eye_bsdf_names.pop()
+            old_bsdf = find_bsdf(assembly, old_bsdf_name)
+            if old_bsdf.attrib['model'] == 'bsdf_mix':
+                old_bsdf = find_bsdf(assembly, get_param(old_bsdf, 'bsdf0'))
+            reflectance_name = get_param(old_bsdf, 'reflectance')
+            add_wolf_eye_surface_shader(assembly, reflectance_name)
+
+def tweak_wolf_shaders(root):
+    print("  Tweaking wolf's fur shader:")
+    set_material_fresnel(root, "wolf_fiber", "0.05")
+    set_material_translucency(root, "wolf_fiber", "0.3")
+    set_material_fresnel(root, "wolf_fur", "0.05")
+    set_material_translucency(root, "wolf_fur", "0.3")
+
+    print("  Tweaking wolf's skin shader:")
+    set_material_fresnel(root, "wolf_skin", "0.05")
+
+    replace_wolf_eye_shader(root)
+
+    print("  Tweaking wolf's teeth shader:")
+    set_material_sample_count(root, "wolf_teeth_", "8")
 
 
 #--------------------------------------------------------------------------------------------------
@@ -319,8 +394,8 @@ def process_file(filepath):
 
     replace_mesh_file_extensions(root)
     replace_hair_shader(root)
-    tweak_robe_shader(root)
-    tweak_glove_shader(root)
+    tweak_hood_shaders(root)
+    tweak_wolf_shaders(root)
     tweak_vegetation_shaders(root)
     tweak_area_lights(root)
     tweak_frames(root)
@@ -334,10 +409,9 @@ def process_file(filepath):
 #--------------------------------------------------------------------------------------------------
 
 def process_files_in_current_directory():
-    for dirpath, dirnames, filenames in os.walk("."):
-        for filename in filenames:
-            if os.path.splitext(filename)[1] == ".appleseed":
-                process_file(os.path.join(dirpath, filename))
+    for filepath in walk(".", False):
+        if os.path.splitext(filepath)[1] == ".appleseed":
+            process_file(filepath)
 
 
 #--------------------------------------------------------------------------------------------------
