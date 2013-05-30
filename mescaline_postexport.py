@@ -248,8 +248,8 @@ def tweak_hood_shaders(root):
     set_material_glossy_reflectance(root, "hood_shoe", "0.04 0.04 0.04")
 
     print("  Tweaking hood's body shaders:")
-    set_material_sample_count(root, "_face_", "4")
-    set_material_sample_count(root, "hood_body", "4")
+    set_material_sample_count(root, "_face_", "8")
+    set_material_sample_count(root, "hood_body", "8")
 
 
 #--------------------------------------------------------------------------------------------------
@@ -304,7 +304,7 @@ def tweak_wolf_shaders(root):
     replace_wolf_eye_shader(root)
 
     print("  Tweaking wolf's teeth shader:")
-    set_material_sample_count(root, "wolf_teeth_", "8")
+    set_material_sample_count(root, "wolf_teeth_", "16")
 
 
 #--------------------------------------------------------------------------------------------------
