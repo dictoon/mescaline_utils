@@ -21,9 +21,27 @@
 # THE SOFTWARE.
 #
 
+import argparse
 import xml.etree.ElementTree as xml
 import os
+import shutil
+import subprocess
 import sys
+
+
+#--------------------------------------------------------------------------------------------------
+# Constants.
+#--------------------------------------------------------------------------------------------------
+
+BACKUP_DIRECTORY = "_backup"
+
+
+#--------------------------------------------------------------------------------------------------
+# Update a given project file.
+#--------------------------------------------------------------------------------------------------
+
+def update_project_file(filepath, tool_path):
+    subprocess.call([tool_path, filepath])
 
 
 #--------------------------------------------------------------------------------------------------
@@ -251,6 +269,9 @@ def tweak_hood_shaders(root):
     set_material_sample_count(root, "_face_", "8")
     set_material_sample_count(root, "hood_body", "8")
 
+    print("  Tweaking hood's basket shaders:")
+    set_material_fresnel(root, "basket", "0.05")
+
 
 #--------------------------------------------------------------------------------------------------
 # Tweak the shaders on various parts of the wolf.
@@ -386,7 +407,23 @@ def assign_render_layers(root):
 # Applies a series of tweaks to a given appleseed project file.
 #--------------------------------------------------------------------------------------------------
 
-def process_file(filepath):
+def process_file(tool_path, filepath):
+
+    if not os.path.exists(BACKUP_DIRECTORY):
+        os.makedirs(BACKUP_DIRECTORY)
+
+    filename = os.path.basename(filepath)
+    backup_filepath = os.path.join(BACKUP_DIRECTORY, os.path.basename(filepath))
+
+    if os.path.exists(backup_filepath):
+        print("Restoring project file from {0}...".format(backup_filepath))
+        shutil.copyfile(backup_filepath, filepath)
+    else:
+        print("Backuping project file to {0}...".format(backup_filepath))
+        shutil.copyfile(filepath, backup_filepath)
+
+    update_project_file(filepath, tool_path)
+
     print("Processing {0}:".format(filepath))
 
     tree = load_project_file(filepath)
@@ -408,10 +445,10 @@ def process_file(filepath):
 # Process all files in the current directory.
 #--------------------------------------------------------------------------------------------------
 
-def process_files_in_current_directory():
+def process_files_in_current_directory(tool_path):
     for filepath in walk(".", False):
         if os.path.splitext(filepath)[1] == ".appleseed":
-            process_file(filepath)
+            process_file(tool_path, filepath)
 
 
 #--------------------------------------------------------------------------------------------------
@@ -419,11 +456,16 @@ def process_files_in_current_directory():
 #--------------------------------------------------------------------------------------------------
 
 def main():
-    if len(sys.argv) < 2:
-        process_files_in_current_directory()
+    parser = argparse.ArgumentParser(description="apply post-export transformations to one or multiple project files from Mescaline.")
+    parser.add_argument("-t", "--tool-path", metavar="tool-path", required=True,
+                        help="set the path to the updateprojectfile tool")
+    parser.add_argument("file", nargs='?', help="file to process (process all files in the current directory if omitted)")
+    args = parser.parse_args()
+
+    if args.file is None:
+        process_files_in_current_directory(args.tool_path)
     else:
-        for filepath in sys.argv[1:]:
-            process_file(filepath)
+        process_file(args.tool_path, args.file)
 
 if __name__ == '__main__':
     main()
