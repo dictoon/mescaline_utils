@@ -40,8 +40,13 @@ BACKUP_DIRECTORY = "_backup"
 # Update a given project file.
 #--------------------------------------------------------------------------------------------------
 
-def update_project_file(filepath, tool_path):
-    subprocess.call([tool_path, filepath])
+def update_project_file(filepath, tool_path, additional_args=None):
+    args = [tool_path, filepath]
+
+    if additional_args is not None:
+        args += additional_args
+
+    subprocess.call(args)
 
 
 #--------------------------------------------------------------------------------------------------
@@ -387,14 +392,15 @@ def tweak_frames(root):
 # Assign light-emitting entities (EDFs, lights) to separate render layers.
 #--------------------------------------------------------------------------------------------------
 
-def assign_render_layers_to_nodes(nodes):
+def assign_render_layers_to_nodes(nodes, render_layer_name=None):
     print("  Assigning render layers:")
 
     for node in nodes:
         name = node.attrib['name']
         if node.find("parameter[@name='render_layer']") is None:
-            print("    Assigning entity \"{0}\" to render layer \"{0}\"...".format(name))
-            set_param(node, 'render_layer', name)
+            rlname = render_layer_name if render_layer_name is not None else name
+            print("    Assigning entity \"{0}\" to render layer \"{1}\"...".format(name, rlname))
+            set_param(node, 'render_layer', rlname)
         else:
             print("    Entity \"{0}\" is already assigned to a render layer.".format(name))
 
@@ -402,13 +408,20 @@ def assign_render_layers(root):
     assign_render_layers_to_nodes([ edf for edf in root.iter('edf') ])
     assign_render_layers_to_nodes([ light for light in root.iter('light') ])
 
+    for inst in root.iter('object_instance'):
+        if "scalp" in inst.attrib['name']:
+            assign_render_layers_to_nodes([ inst ], "scalp")
+
+    for inst in root.iter('object_instance'):
+        if "_w_skin_ncl1_1_w_skin_ncl1_1Shape_instance_0" in inst.attrib['name']:
+            assign_render_layers_to_nodes([ inst ], "skin")
+
 
 #--------------------------------------------------------------------------------------------------
 # Applies a series of tweaks to a given appleseed project file.
 #--------------------------------------------------------------------------------------------------
 
 def process_file(tool_path, filepath):
-
     if not os.path.exists(BACKUP_DIRECTORY):
         os.makedirs(BACKUP_DIRECTORY)
 
@@ -422,7 +435,7 @@ def process_file(tool_path, filepath):
         print("Backuping project file to {0}...".format(backup_filepath))
         shutil.copyfile(filepath, backup_filepath)
 
-    update_project_file(filepath, tool_path)
+    update_project_file(filepath, tool_path, ["--to-revision", "5"])
 
     print("Processing {0}:".format(filepath))
 
@@ -439,6 +452,8 @@ def process_file(tool_path, filepath):
     assign_render_layers(root)
 
     write_project_file(filepath, tree)
+
+    update_project_file(filepath, tool_path)
 
 
 #--------------------------------------------------------------------------------------------------
