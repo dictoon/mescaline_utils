@@ -344,7 +344,8 @@ VEGETATION_MATERIAL_MARKERS = [ "big_branches_",
                                 "Leaf ",
                                 "leave_",
                                 "leaves_",
-                                "grass_" ]
+                                "grass_",
+                                "tree_compil_" ]
 
 def tweak_vegetation_shaders(root):
     print("  Tweaking vegetation shaders:")
