@@ -34,6 +34,8 @@ import sys
 #--------------------------------------------------------------------------------------------------
 
 BACKUP_DIRECTORY = "_backup"
+TEXTURES_DIRECTORY = "_textures"
+SKY_TEXTURE_FILENAME = "sky_dusk_00.exr"
 
 
 #--------------------------------------------------------------------------------------------------
@@ -390,7 +392,48 @@ def tweak_frames(root):
 
 
 #--------------------------------------------------------------------------------------------------
-# Assign light-emitting entities (EDFs, lights) to separate render layers.
+# Add a sky to the scene.
+#--------------------------------------------------------------------------------------------------
+
+def add_sky(root):
+    print("  Adding sky...")
+
+    scene = root.find("scene")
+
+    texture = xml.Element('texture')
+    texture.attrib['name'] = "sky_dusk_00"
+    texture.attrib['model'] = "disk_texture_2d"
+    set_param(texture, "color_space", "srgb")
+    set_param(texture, "filename", TEXTURES_DIRECTORY + "/" + SKY_TEXTURE_FILENAME)
+    scene.append(texture)
+
+    texture_inst = xml.Element('texture_instance')
+    texture_inst.attrib['name'] = "sky_dusk_00_inst"
+    texture_inst.attrib['texture'] = "sky_dusk_00"
+    set_param(texture_inst, "addressing_mode", "wrap")
+    set_param(texture_inst, "filtering_mode", "bilinear")
+    scene.append(texture_inst)
+
+    environment_edf = xml.Element('environment_edf')
+    environment_edf.attrib['name'] = "environment_edf"
+    environment_edf.attrib['model'] = "latlong_map_environment_edf"
+    set_param(environment_edf, "radiance", "sky_dusk_00_inst")
+    set_param(environment_edf, "horizontal_shift", "50.0")
+    scene.append(environment_edf)
+
+    environment_shader = xml.Element('environment_shader')
+    environment_shader.attrib['name'] = "environment_shader"
+    environment_shader.attrib['model'] = "edf_environment_shader"
+    set_param(environment_shader, "environment_edf", "environment_edf")
+    scene.append(environment_shader)
+
+    environment = find_entity(root, "environment", "environment")
+    set_param(environment, "environment_edf", "environment_edf")
+    set_param(environment, "environment_shader", "environment_shader")
+
+
+#--------------------------------------------------------------------------------------------------
+# Assign light-emitting entities (EDFs, lights, etc.) to separate render layers.
 #--------------------------------------------------------------------------------------------------
 
 def assign_render_layers_to_nodes(nodes, render_layer_name=None):
@@ -406,6 +449,7 @@ def assign_render_layers_to_nodes(nodes, render_layer_name=None):
             print("    Entity \"{0}\" is already assigned to a render layer.".format(name))
 
 def assign_render_layers(root):
+    assign_render_layers_to_nodes([ env_edf for env_edf in root.iter('environment_edf') ])
     assign_render_layers_to_nodes([ edf for edf in root.iter('edf') ])
     assign_render_layers_to_nodes([ light for light in root.iter('light') ])
 
@@ -422,7 +466,7 @@ def assign_render_layers(root):
 # Applies a series of tweaks to a given appleseed project file.
 #--------------------------------------------------------------------------------------------------
 
-def process_file(tool_path, filepath):
+def process_file(filepath, args):
     if not os.path.exists(BACKUP_DIRECTORY):
         os.makedirs(BACKUP_DIRECTORY)
 
@@ -436,7 +480,7 @@ def process_file(tool_path, filepath):
         print("Backuping project file to {0}...".format(backup_filepath))
         shutil.copyfile(filepath, backup_filepath)
 
-    update_project_file(filepath, tool_path, ["--to-revision", "5"])
+    update_project_file(filepath, args.tool_path, ["--to-revision", "5"])
 
     print("Processing {0}:".format(filepath))
 
@@ -450,21 +494,25 @@ def process_file(tool_path, filepath):
     tweak_vegetation_shaders(root)
     tweak_area_lights(root)
     tweak_frames(root)
+
+    if args.add_sky:
+        add_sky(root)
+
     assign_render_layers(root)
 
     write_project_file(filepath, tree)
 
-    update_project_file(filepath, tool_path)
+    update_project_file(filepath, args.tool_path)
 
 
 #--------------------------------------------------------------------------------------------------
 # Process all files in the current directory.
 #--------------------------------------------------------------------------------------------------
 
-def process_files_in_current_directory(tool_path):
+def process_files_in_current_directory(args):
     for filepath in walk(".", False):
         if os.path.splitext(filepath)[1] == ".appleseed":
-            process_file(tool_path, filepath)
+            process_file(filepath, args)
 
 
 #--------------------------------------------------------------------------------------------------
@@ -475,13 +523,20 @@ def main():
     parser = argparse.ArgumentParser(description="apply post-export transformations to one or multiple project files from Mescaline.")
     parser.add_argument("-t", "--tool-path", metavar="tool-path", required=True,
                         help="set the path to the updateprojectfile tool")
+    parser.add_argument("--add-sky", action='store_true', help="add a sky to the scene")
     parser.add_argument("file", nargs='?', help="file to process (process all files in the current directory if omitted)")
     args = parser.parse_args()
 
     if args.file is None:
-        process_files_in_current_directory(args.tool_path)
+        process_files_in_current_directory(args)
     else:
-        process_file(args.tool_path, args.file)
+        process_file(args.file, args)
+
+    if args.add_sky:
+        print("Copying {0} to shot directory...".format(SKY_TEXTURE_FILENAME))
+        script_directory = os.path.dirname(os.path.realpath(__file__))
+        shutil.copyfile(os.path.join(script_directory, SKY_TEXTURE_FILENAME),
+                        os.path.join(TEXTURES_DIRECTORY, SKY_TEXTURE_FILENAME))
 
 if __name__ == '__main__':
     main()
