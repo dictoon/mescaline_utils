@@ -425,6 +425,7 @@ def add_sky(root):
     environment_shader.attrib['name'] = "environment_shader"
     environment_shader.attrib['model'] = "edf_environment_shader"
     set_param(environment_shader, "environment_edf", "environment_edf")
+    set_param(environment_shader, "alpha_value", "0.0")
     scene.append(environment_shader)
 
     environment = find_entity(root, "environment", "environment")
