@@ -138,7 +138,8 @@ def setup():
                 elif type == 'gobo_dummy':
                     add_gobo(transform, attributes)
                 elif type == 'camera':
-                    setup_dof('dof_target', transform, attributes['f_stop'])
+                    if cmds.objExists('dof_target'):
+                        setup_dof('dof_target', transform, attributes['f_stop'])
 
     # adjust light multiplier values
     for light in cmds.ls(lt=True):
