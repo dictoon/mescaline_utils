@@ -395,7 +395,7 @@ def tweak_frames(root):
 # Add a sky to the scene.
 #--------------------------------------------------------------------------------------------------
 
-def add_sky(root):
+def add_sky(root, horizontal_shift):
     print("  Adding sky...")
 
     scene = root.find("scene")
@@ -418,7 +418,7 @@ def add_sky(root):
     environment_edf.attrib['name'] = "environment_edf"
     environment_edf.attrib['model'] = "latlong_map_environment_edf"
     set_param(environment_edf, "radiance", "sky_dusk_00_inst")
-    set_param(environment_edf, "horizontal_shift", "50.0")
+    set_param(environment_edf, "horizontal_shift", horizontal_shift)
     scene.append(environment_edf)
 
     environment_shader = xml.Element('environment_shader')
@@ -497,7 +497,7 @@ def process_file(filepath, args):
     tweak_frames(root)
 
     if args.add_sky:
-        add_sky(root)
+        add_sky(root, "50.0")
 
     assign_render_layers(root)
 
