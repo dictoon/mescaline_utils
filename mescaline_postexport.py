@@ -367,15 +367,19 @@ def tweak_vegetation_shaders(root):
 # Tweak the area lights.
 #--------------------------------------------------------------------------------------------------
 
-AREA_LIGHT_MATERIAL_MARKER = "arealight_"
+AREA_LIGHT_MATERIAL_MARKERS = [ "arealight_",
+                                "hurricane_light_" ]
 
 def tweak_area_lights(root):
     print("  Tweaking area lights:")
 
     for material in root.iter('material'):
-        if AREA_LIGHT_MATERIAL_MARKER in material.attrib['name']:
-            print("    Setting \"alpha_mask\" to \"0\" on material \"{0}\"...".format(material.attrib['name']))
-            set_param(material, "alpha_map", "0")
+        material_name = material.attrib['name']
+        for material_marker in AREA_LIGHT_MATERIAL_MARKERS:
+            if material_marker in material_name:
+                print("    Setting \"alpha_mask\" to \"0\" on material \"{0}\"...".format(material_name))
+                set_param(material, "alpha_map", "0")
+                break
 
 
 #--------------------------------------------------------------------------------------------------
@@ -455,12 +459,16 @@ def assign_render_layers(root):
     assign_render_layers_to_nodes([ light for light in root.iter('light') ])
 
     for inst in root.iter('object_instance'):
-        if "scalp" in inst.attrib['name']:
+        instance_name = inst.attrib['name']
+
+        if "scalp" in instance_name:
             assign_render_layers_to_nodes([ inst ], "scalp")
 
-    for inst in root.iter('object_instance'):
-        if "_w_skin_ncl1_1_w_skin_ncl1_1Shape_instance_0" in inst.attrib['name']:
+        if "_w_skin_ncl1_1_w_skin_ncl1_1Shape_instance_0" in instance_name:
             assign_render_layers_to_nodes([ inst ], "skin")
+
+        if "hurricane_light" in instance_name:
+            assign_render_layers_to_nodes([ inst ], "hurricane_light")
 
 
 #--------------------------------------------------------------------------------------------------
@@ -489,15 +497,18 @@ def process_file(filepath, args):
     root = tree.getroot()
 
     replace_mesh_file_extensions(root)
+
     replace_hair_shader(root)
     tweak_hood_shaders(root)
     tweak_wolf_shaders(root)
     tweak_vegetation_shaders(root)
     tweak_area_lights(root)
+
     tweak_frames(root)
 
     if args.add_sky:
         add_sky(root, "50.0")
+        #add_sky(root, "180.0")
 
     assign_render_layers(root)
 
