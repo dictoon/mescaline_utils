@@ -266,11 +266,11 @@ def tweak_hood_shaders(root):
 
     print("  Tweaking hood's glove shader:")
     set_material_fresnel(root, "hood_glove", "0.3")
-    set_material_glossy_reflectance(root, "hood_glove", "0.04 0.04 0.04")
+    set_material_glossy_reflectance(root, "hood_glove", "0.04")
 
     print("  Tweaking hood's shoes shader:")
     set_material_fresnel(root, "hood_shoe", "0.3")
-    set_material_glossy_reflectance(root, "hood_shoe", "0.04 0.04 0.04")
+    set_material_glossy_reflectance(root, "hood_shoe", "0.04")
 
     print("  Tweaking hood's body shaders:")
     set_material_sample_count(root, "_face_", "8")
